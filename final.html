@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulasi WA Reaction PRO FIXED - Aiman</title>
+    <style>
+        :root {
+            --bg-color: #050a14;
+            --card-bg: #0a1628;
+            --border-gold: #8b733a;
+            --text-gold: #d4af37;
+            --btn-green: #1a4d2e;
+            --text-white: #e0e0e0;
+            --accent-blue: #1e3a5f;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-white); margin: 0; padding: 10px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 500px; position: relative; }
+
+        .nav-panels { position: absolute; top: 10px; right: 0; display: flex; gap: 5px; z-index: 100; }
+        .nav-btn { background: var(--border-gold); padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; color: black; }
+
+        .slide { display: none; }
+        .active { display: block; }
+
+        .card { background: var(--card-bg); border: 1px solid var(--border-gold); padding: 20px; border-radius: 8px; margin-bottom: 15px; }
+        label { display: block; color: var(--text-gold); font-weight: bold; margin-bottom: 8px; font-size: 11px; }
+        input, select { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border-gold); padding: 12px; color: white; box-sizing: border-box; border-radius: 4px; margin-bottom: 15px; }
+        
+        /* Payment Grid */
+        .payment-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
+        .pay-option { background: var(--accent-blue); border: 1px solid transparent; padding: 8px; text-align: center; font-size: 11px; cursor: pointer; border-radius: 4px; }
+        .pay-option.selected { border-color: var(--text-gold); background: #2a4d7d; }
+
+        .btn-main { width: 100%; background: var(--btn-green); color: white; border: 1px solid var(--border-gold); padding: 15px; font-weight: bold; cursor: pointer; }
+        .coin-display { font-size: 24px; color: var(--text-gold); font-weight: bold; text-align: center; margin-bottom: 10px; }
+        .price-tag { background: rgba(212, 175, 55, 0.1); border: 1px dashed var(--text-gold); padding: 10px; text-align: center; margin-bottom: 15px; color: var(--text-gold); font-weight: bold; }
+        
+        /* Slide 2 Stats */
+        .stat-box { background: var(--card-bg); border: 1px solid var(--border-gold); text-align: center; padding: 20px; margin-bottom: 15px; }
+        
+        .order-item, .history-item { background: #0d1b2e; border-left: 4px solid var(--btn-green); padding: 12px; margin-top: 10px; border-radius: 4px; font-size: 13px; }
+        .history-item { border-left-color: var(--text-gold); font-family: monospace; }
+        .btn-small { padding: 6px 10px; font-size: 11px; border: none; cursor: pointer; color: white; border-radius: 3px; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="nav-panels">
+        <div class="nav-btn" onclick="protectedNav('slide2')">ADMIN</div>
+        <div class="nav-btn" onclick="protectedNav('slide3')">OWNER</div>
+    </div>
+
+    <div id="slide1" class="slide active">
+        <div style="background:var(--btn-green); display:inline-block; padding:5px 10px; border-radius:4px; font-size:12px; margin-bottom:15px;">● SERVER ONLINE</div>
+        <div class="coin-display">🪙 <span id="userCoin">0</span> Available</div>
+        
+        <div class="card">
+            <label>WHATSAPP CHANNEL URL</label>
+            <input type="text" id="urlInput" placeholder="Paste link...">
+            
+            <label>REACTIONS (MAX 5)</label>
+            <input type="text" id="emojiInput" placeholder="Contoh: 💸,🪙,🥹,😭,🫣">
+
+            <label>METODE PEMBAYARAN</label>
+            <div class="payment-grid">
+                <div class="pay-option" onclick="selectPay(this, 'DANA')">DANA</div>
+                <div class="pay-option" onclick="selectPay(this, 'OVO')">OVO</div>
+                <div class="pay-option" onclick="selectPay(this, 'GOPAY')">GOPAY</div>
+                <div class="pay-option" onclick="selectPay(this, 'SHOPEEPAY')">ShopeePay</div>
+                <div class="pay-option" onclick="selectPay(this, 'QRIS')">QRIS</div>
+            </div>
+
+            <label>JUMLAH KELIPATAN (QTY)</label>
+            <select id="qtySelect" onchange="updatePrice()">
+                <option value="1">x1 (5 Emoji - 1 Koin)</option>
+                <option value="2">x2 (10 Emoji - 2 Koin)</option>
+                <option value="5">x5 (25 Emoji - 5 Koin)</option>
+            </select>
+
+            <div class="price-tag" id="displayPrice">HARGA: Rp 3.500</div>
+            <button class="btn-main" onclick="userOrder()">SEND REACTION</button>
+        </div>
+    </div>
+
+    <div id="slide2" class="slide">
+        <h3 style="color:var(--text-gold)">🛠 ADMIN DASHBOARD</h3>
+        <div class="stat-box">
+            <h2 id="totalPending" style="margin:0; color:var(--text-gold)">0</h2>
+            <p style="font-size:11px; color:gray;">TOTAL PENDING REQUEST</p>
+        </div>
+        <div id="orderContainer"></div>
+        <button class="btn-main" style="margin-top:20px; background:#444;" onclick="showSlide('slide1')">BACK TO HOME</button>
+    </div>
+
+    <div id="slide3" class="slide">
+        <h3 style="color:var(--text-gold)">👑 OWNER PANEL</h3>
+        <div class="card">
+            <label>SETTING STOK KOIN (REFILL)</label>
+            <input type="number" id="refillInput" placeholder="Masukkan jumlah koin...">
+            <button class="btn-main" style="padding:10px" onclick="refillCoin()">UPDATE STOK</button>
+        </div>
+        <label>HISTORY PROCESSED CODES:</label>
+        <div id="historyContainer"></div>
+        <button class="btn-main" style="margin-top:20px; background:#444;" onclick="showSlide('slide1')">BACK TO HOME</button>
+    </div>
+</div>
+
+<script>
+    let stockCoin = 250;
+    let orders = [];
+    let history = [];
+    let selectedPayMethod = "";
+    const passwordBenar = "123123023";
+
+    function selectPay(el, method) {
+        document.querySelectorAll('.pay-option').forEach(opt => opt.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedPayMethod = method;
+    }
+
+    function updatePrice() {
+        const qty = document.getElementById('qtySelect').value;
+        document.getElementById('displayPrice').innerText = "HARGA: Rp " + (3500 * qty).toLocaleString('id-ID');
+    }
+
+    function protectedNav(target) {
+        let pass = prompt("Masukkan Password Admin:");
+        if (pass === passwordBenar) {
+            showSlide(target);
+        } else {
+            alert("Password Salah, Man!");
+        }
+    }
+
+    function showSlide(id) {
+        document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function userOrder() {
+        const qty = parseInt(document.getElementById('qtySelect').value);
+        const emoji = document.getElementById('emojiInput').value;
+        
+        if (stockCoin < qty) return alert("Maaf Man, stok koin habis!");
+        if (!emoji || !selectedPayMethod) return alert("Lengkapi Emoji dan Metode Bayar dulu!");
+
+        const code = "RE-" + Math.floor(Math.random() * 90000 + 10000);
+        stockCoin -= qty;
+        
+        orders.push({ code, emoji, qty: qty * 5, pay: selectedPayMethod, price: 3500 * qty });
+        
+        document.getElementById('userCoin').innerText = stockCoin;
+        document.getElementById('totalPending').innerText = orders.length;
+        alert("Berhasil! Kode Antrian: " + code);
+        renderAdmin();
+    }
+
+    function renderAdmin() {
+        const cont = document.getElementById('orderContainer');
+        cont.innerHTML = orders.length === 0 ? "<p>Tidak ada antrian</p>" : "";
+        orders.forEach((item, i) => {
+            cont.innerHTML += `
+                <div class="order-item">
+                    <b>${item.code}</b> | [${item.pay}]<br>
+                    ${item.emoji} (${item.qty} Emoji)<br>
+                    <small>Rp ${item.price.toLocaleString('id-ID')}</small>
+                    <div style="margin-top:10px">
+                        <button class="btn-small" style="background:#28a745" onclick="prosesOrder(${i})">PROSES</button>
+                        <button class="btn-small" style="background:#dc3545" onclick="hapusOrder(${i})">BATAL</button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function prosesOrder(i) {
+        history.push(orders[i].code);
+        orders.splice(i, 1);
+        document.getElementById('totalPending').innerText = orders.length;
+        renderAdmin();
+        renderHistory();
+        alert("Order Berhasil Diproses!");
+    }
+
+    function hapusOrder(i) {
+        orders.splice(i, 1);
+        document.getElementById('totalPending').innerText = orders.length;
+        renderAdmin();
+    }
+
+    function renderHistory() {
+        const cont = document.getElementById('historyContainer');
+        cont.innerHTML = history.map(code => `<div class="history-item">✅ Code: ${code} - PROCESSED</div>`).join('');
+    }
+
+    function refillCoin() {
+        const val = document.getElementById('refillInput').value;
+        if (val === "") return alert("Isi jumlahnya, Man!");
+        stockCoin = parseInt(val);
+        document.getElementById('userCoin').innerText = stockCoin;
+        alert("Stok Koin Diupdate!");
+    }
+</script>
+
+</body>
+</html>
